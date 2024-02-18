@@ -106,9 +106,10 @@ public class IMTServiceImpl implements IMTService {
     @Override
     public Boolean sendCode(String mobile, String deviceId) {
         Map<String, Object> data = new HashMap<>();
+        long timestamp = System.currentTimeMillis();
         data.put("mobile", mobile);
-        data.put("md5", signature(mobile));
-        data.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        data.put("md5", signatureCxs(mobile, timestamp));
+        data.put("timestamp", timestamp);
 //        data.put("MT-APP-Version", MT_VERSION);
 
         HttpRequest request = HttpUtil.createRequest(Method.POST,
@@ -624,6 +625,31 @@ public class IMTServiceImpl implements IMTService {
     private static String signature(String content) {
 
         String text = SALT + content + System.currentTimeMillis();
+        String md5 = "";
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hashBytes = md.digest(text.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            md5 = sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return md5;
+    }
+
+    /**
+     * 获取验证码的md5签名，密钥+手机号+时间
+     * 登录的md5签名：密钥+mobile+vCode+ydLogId+ydToken
+     *
+     * @param content
+     * @return
+     */
+    private static String signatureCxs(String content,long timeMillise) {
+
+        String text = SALT + content + timeMillise;
         String md5 = "";
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
